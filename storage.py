@@ -17,7 +17,7 @@ def load(path):
     except json.JSONDecodeError:
         print("文件损坏")
         logging.error("读失败，文件损坏")
-        return []
+        raise SystemExit("文件损坏")
     else:
         book = []
         for i in books:

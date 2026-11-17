@@ -4,23 +4,23 @@ from book import Book
 from pathlib import Path
 import logging
 
-logging.basicConfig(
-    filename=Path(__file__).resolve().parent / "main.log",
-    encoding="utf-8",
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    
-)
+
+
+def found(books):
+    f = False
+    for b in books:
+        if b.name == sys.argv[2]:
+            f = True
+            continue
+    return f
+        
 
 def add(path):
     books = load(path)
-    found = False
-    for b in books:
-        if b.name == sys.argv[2]:
-            found = True
-            print("该书已在库")
-            break
-    if not found:
+    if found(books):
+        print("该书已在库")
+        logging.warning("该书已在库")
+    else:
         newbook = Book(sys.argv[2], sys.argv[3])
         books.append(newbook)
         save(path, books)
@@ -30,12 +30,7 @@ def add(path):
 
 def delete(path):
     books = load(path)
-    found = False
-    for b in books:
-        if b.name == sys.argv[2]:
-            found = True
-            break
-    if found:
+    if found(books):
         nbooks = []
         for b in books:
             if b.name != sys.argv[2]:
@@ -47,47 +42,43 @@ def delete(path):
     else:
         print("没找到")
         logging.warning("没找到")
-        return
-    
-def find_book(books, name):
-    for b in books:
-        if b.name == name:
-            return b
-    return None
+
 
 def done(path):
     books = load(path)
-    b = find_book(books, sys.argv[2])
-    if b is None:
+    if found(books):
+        for b in books:
+            if b.name == sys.argv[2]:
+                book = b
+        if book.done == False:
+            book.make_done()
+            save(path, books)
+            print("已确认出库")
+            logging.info("出库 %s", book)
+        else:
+            print("该书未在库")
+            logging.warning("该书未在库")
+    else:
         print("没找到")
         logging.warning("没找到")
-        return
-    elif b.done == False:
-        b.make_done()
-        save(path, books)
-        print("已确认出库")
-        logging.info("出库 %s", b)
-        return
-    else:
-        print("该书已被借走")
-        return
 
 def reopen(path):
     books = load(path)
-    b = find_book(books, sys.argv[2])
-    if b is None:
+    if found(books):
+        for b in books:
+            if b.name == sys.argv[2]:
+                book = b
+        if book.done == True:
+            book.reopen()
+            save(path, books)
+            print("已确认入库")
+            logging.info("入库 %s", book)
+        else:
+            print("该书已在库")
+            logging.warning("该书已在库")
+    else:
         print("没找到")
         logging.warning("没找到")
-        return
-    elif b.done == True:
-        b.reopen()
-        save(path, books)
-        print("已确认入库")
-        logging.info("入库 %s", b)
-        return
-    else:
-        print("该书已在库")
-        return
 
 def search(path):
     books = load(path)
@@ -110,66 +101,54 @@ def show(path):
     return
 
 # 分发
+def check(n):
+    c = False
+    if len(sys.argv) < n:
+        print("缺少参数")
+        logging.warning("缺少参数")
+        return c
+    elif len(sys.argv) > n:
+        print("命令不合法")
+        logging.warning("参数不合法")
+        return c
+    else:
+        c = True
+        return c
 
-def main():
-    json_ = Path(__file__).resolve().parent / "图书管理.json"
+JSON_PATH = Path(__file__).resolve().parent / "图书管理.json"
+def main(path=JSON_PATH):
+    logging.basicConfig(
+        filename=Path(__file__).resolve().parent / "main.log",
+        encoding="utf-8",
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        
+    )    
     if len(sys.argv) >= 2:
         if sys.argv[1] == "add":
-            if len(sys.argv) == 4:
-                add(json_)
-            elif len(sys.argv) < 4:
-                print("缺少参数")
-                logging.warning("缺少参数")
-            else:
-                print("参数不合法")
-                logging.warning("参数不合法")
+            if check(4):
+                add(path)
 
         elif sys.argv[1] == "delete":
-            if len(sys.argv) == 3:
-                delete(json_)
-            elif len(sys.argv) < 3:
-                print("缺少参数")
-                logging.warning("缺少参数")
-            else:
-                print("参数不合法")
-                logging.warning("参数不合法")
+            if check(3):
+                delete(path)
 
         elif sys.argv[1] == "done":
-            if len(sys.argv) == 3:
-                done(json_)
-            elif len(sys.argv) < 3:
-                print("缺少参数")
-                logging.warning("缺少参数")
-            else:
-                print("参数不合法") 
-                logging.warning("参数不合法")        
+            if check(3):
+                done(path)
+            
 
         elif sys.argv[1] == "reopen":
-            if len(sys.argv) == 3:
-                reopen(json_)
-            elif len(sys.argv) < 3:
-                print("缺少参数")
-                logging.warning("缺少参数")
-            else:
-                print("参数不合法") 
-                logging.warning("参数不合法")
+            if check(3):
+                reopen(path)
 
         elif sys.argv[1] == "search":
-            if len(sys.argv) == 3:
-                search(json_)
-            elif len(sys.argv) < 3:
-                print("缺少参数")
-                logging.warning("缺少参数")
-            else:
-                print("参数不合法") 
-                logging.warning("参数不合法")
+            if check(3):
+                search(path)
 
         elif sys.argv[1] == "show":
-            if len(sys.argv) == 2:
-                show(json_)
-            else:
-                print("命令不合法")
-                logging.warning("命令不合法")
+            if check(2):
+                show(path)
         else:
             print("命令错误")
             logging.warning("命令错误")
